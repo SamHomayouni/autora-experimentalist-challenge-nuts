@@ -7,7 +7,9 @@ def sample(
         conditions: Union[pd.DataFrame, np.ndarray],
         models: List,
         reference_conditions: Union[pd.DataFrame, np.ndarray],
-        num_samples: int = 1) -> pd.DataFrame:
+        num_samples: int = 1,
+        random_state: Union[int, None] = None,
+        ) -> pd.DataFrame:
     """
     Annealed hybrid sampler with memory-safe scoring:
     - Stage A: Random vs. Randomizer (annealed ε with coverage guard)
@@ -17,12 +19,16 @@ def sample(
     """
     # ----------------- Tunables for scale -----------------
     # Max candidates to score each iteration (subset of pool)
-    CAND_CAP = 5000                      # try 5k; lower if you still see crashes
+    #CAND_CAP = 5000                      # try 5k; lower if you still see crashes
     # Max reference points used for novelty
     REF_CAP  = 5000
     # Shortlist multiplier before diversity pick
-    SHORTLIST_MULT = 5                   # shortlist size ≈ num_samples * SHORTLIST_MULT
-    SHORTLIST_MIN = 50
+    #SHORTLIST_MULT = 5                   # shortlist size ≈ num_samples * SHORTLIST_MULT
+    #SHORTLIST_MIN = 50
+    CAND_CAP = 10000
+    SHORTLIST_MULT = 3
+    SHORTLIST_MIN = 30
+
 
     # ----------------- Helpers -----------------
     def _to_df(X, like: pd.DataFrame | None) -> pd.DataFrame:
@@ -156,7 +162,16 @@ def sample(
         return conditions_df
 
     # ----------------- Subsample for safety -----------------
-    rng = np.random.default_rng()
+    #rng = np.random.default_rng()
+    #if len(conditions_df) > CAND_CAP:
+     #   cand_idx = rng.choice(conditions_df.index.values, size=CAND_CAP, replace=False)
+     #   cands_view = conditions_df.loc[cand_idx]
+    #else:
+     #   cands_view = conditions_df
+    # Per-iteration seed: base seed mixed with how many reference points we have
+    ref_len = 0 if reference_conditions is None else (len(reference_conditions) if not isinstance(reference_conditions, np.ndarray) else reference_conditions.shape[0])
+    seed_iter = (random_state or 0) * 1000003 + int(ref_len)
+    rng = np.random.default_rng(seed_iter)   # <— use this rng everywhere below
     if len(conditions_df) > CAND_CAP:
         cand_idx = rng.choice(conditions_df.index.values, size=CAND_CAP, replace=False)
         cands_view = conditions_df.loc[cand_idx]
@@ -170,18 +185,23 @@ def sample(
         ref_view = ref_df
 
     # ----------------- Stage A: Random vs Randomizer -----------------
-    ref_n = len(ref_df)
-    eps0, tau, eps_min = 0.6, 200.0, 0.1
-    eps = max(eps_min, eps0 * math.exp(-ref_n / max(1.0, tau)))
+    #ref_n = len(ref_df)
+    ref_n = len(ref_view)
 
+    #eps0, tau, eps_min = 0.6, 200.0, 0.1
+    #eps = max(eps_min, eps0 * math.exp(-ref_n / max(1.0, tau)))
+    eps0, tau, eps_min = 0.4, 80.0, 0.05
+    eps = max(eps_min, eps0 * math.exp(-ref_n / max(1.0, tau)))
     # Coverage guard from novelty on the (subsampled) view
     try:
         nov_all = _novelty_scores(cands_view, ref_view)
         coverage = float(np.mean(nov_all))
     except Exception:
         coverage = 0.5
+    #if coverage < 0.2:
+    #    eps = min(1.0, eps + 0.2)
     if coverage < 0.2:
-        eps = min(1.0, eps + 0.2)
+        eps = min(1.0, eps + 0.1)
 
     use_random = (rng.random() < eps) or (len(models) == 0)
 
@@ -195,9 +215,14 @@ def sample(
     sN = _novelty_scores(cands_view, ref_view)
 
     # Route by softmax over aggregated signals
-    T0, tauT, Tmin = 1.0, 300.0, 0.3
+    #T0, tauT, Tmin = 1.0, 300.0, 0.3
+    #T = max(Tmin, T0 * math.exp(-ref_n / max(1.0, tauT)))
+    #q = 0.1
+    # Commit earlier (lower temperature faster) and use a slightly larger tail
+    T0, tauT, Tmin = 1.0, 120.0, 0.25
     T = max(Tmin, T0 * math.exp(-ref_n / max(1.0, tauT)))
-    q = 0.1
+    q = 0.2
+
 
     def topq_mean(a: np.ndarray, q: float) -> float:
         if a.size == 0: return 0.0
@@ -205,11 +230,34 @@ def sample(
         return float(np.mean(np.sort(a)[-k:]))
 
     SF, SU, SN = topq_mean(sF, q), topq_mean(sU, q), topq_mean(sN, q)
+    #prior = np.array([0.05, 0.05, 0.05], dtype=float)
+    #logits = (np.array([SF, SU, SN]) + prior) / max(1e-6, T)
+    #logits -= np.max(logits)
+    #w = np.exp(logits); w /= np.sum(w)
+
+    # Soft scores (still computed with temperature), but pick deterministically
     prior = np.array([0.05, 0.05, 0.05], dtype=float)
     logits = (np.array([SF, SU, SN]) + prior) / max(1e-6, T)
     logits -= np.max(logits)
     w = np.exp(logits); w /= np.sum(w)
-    strat = rng.choice(np.array(["F", "U", "N"]), p=w)
+    #strat = rng.choice(np.array(["F", "U", "N"]), p=w)
+    # Determine if any classifier is present (has predict_proba)
+    has_classifier = any(hasattr(m, "predict_proba") for m in models)
+
+    labels_all = np.array(["F", "U", "N"])
+    weights_all = w  # corresponds to [F, U, N]
+
+    if has_classifier:
+        labels = labels_all
+        weights = weights_all
+    else:
+        # Drop F when only regressors: F≈U; avoid noisy routing
+        labels = np.array(["U", "N"])
+        weights = weights_all[1:]  # keep U,N
+
+    # Deterministic routing: pick the highest-weight strategy
+    strat = labels[int(np.argmax(weights))]
+
 
     scores = {"F": sF, "U": sU, "N": sN}[strat]
 
