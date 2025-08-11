@@ -20,7 +20,7 @@ def sample(
     # ----------------- Tunables for scale -----------------
     # Max candidates to score each iteration (subset of pool)
     #CAND_CAP = 5000                      # try 5k; lower if you still see crashes
-    # Max reference points used for novelty
+    # Maxx reference points used for novelty
     REF_CAP  = 5000
     # Shortlist multiplier before diversity pick
     #SHORTLIST_MULT = 5                   # shortlist size ≈ num_samples * SHORTLIST_MULT
