@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 from typing import Union, List
 
+
 def sample(
         conditions: Union[pd.DataFrame, np.ndarray],
-        models: List,
-        reference_conditions: Union[pd.DataFrame, np.ndarray],
         num_samples: int = 1,
+        models: List | None = None,
+        reference_conditions: Union[pd.DataFrame, np.ndarray, None] = None,
         random_state: Union[int, None] = None,
         ) -> pd.DataFrame:
     """
@@ -17,6 +18,8 @@ def sample(
     - Diversity: farthest-first on a shortlist
     - NEW: cap candidate/reference sizes to avoid O(N*M) memory blowups; novelty via NearestNeighbors.
     """
+    models = models or []
+
     # ----------------- Tunables for scale -----------------
     # Max candidates to score each iteration (subset of pool)
     #CAND_CAP = 5000                      # try 5k; lower if you still see crashes
