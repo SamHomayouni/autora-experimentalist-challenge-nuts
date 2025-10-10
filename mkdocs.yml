@@ -2,8 +2,7 @@
 INHERIT: mkdocs/base.yml  # use the shared AutoRA configuration by default
 
 site_name: AutoRA autora-experimentalist-example
-repo_url: 'https://github.com/musslick/autora-experimentalist-challenge'
-
+repo_url: 'https://github.com/SamHomayouni/autora-experimentalist-challenge-nuts'
 nav:
 - Home: 'index.md'
 - Quickstart: 'quickstart.md'
