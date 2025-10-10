@@ -5,20 +5,14 @@ on:
     branches:
       - main
 
-# Allow this job to clone the repo and create a page deployment
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Needed for mkdocs-git-revision-date-localized-plugin
-
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
@@ -30,14 +24,4 @@ jobs:
       - name: Install mkdocs
         run: pip install mkdocs mkdocs-material mkdocs-jupyter
 
-      - name: Build documentation
-        run: mkdocs build
-
-      - name: Upload pages artifact
-        uses: actions/upload-artifact@v4
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+      - run: mkdocs gh-deploy --force
