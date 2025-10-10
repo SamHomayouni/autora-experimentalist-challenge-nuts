@@ -7,7 +7,10 @@ You will need:
 *autora-experimentalist-example is a part of the `autora` package:
 
 ```shell
-pip install -U autora["experimentalist-autora-experimentalist-example"]
+python -m pip install --upgrade --no-cache-dir \
+  --index-url https://test.pypi.org/simple \
+  --extra-index-url https://pypi.org/simple \
+  autora-experimentalist-nuts==0.0.2
 ```
 
 
