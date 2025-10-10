@@ -1,7 +1,7 @@
 [project]
 # UPDATE THIS BEFORE PUBLISHING
-name = "autora_experimentalist_example"
-description = "This is an example experimentalist."
+name = "NUTS experimentalist"
+description = "This is an experimentalist."
 authors = [{ name = "FirstName LastName", email = "your@email.de" }]
 dynamic = ["version"]
 
@@ -27,7 +27,7 @@ dev = [
 
 [project.urls]
 homepage = "http://www.empiricalresearch.ai"
-repository = "https://github.com/musslick/autora-experimentalist-challenge"
+repository = "https://github.com/SamHomayouni/autora-experimentalist-challenge-nuts"
 documentation = "https://SamHomayouni.github.io/autora-experimentalist-challenge-nuts/"
 
 
