@@ -1,6 +1,6 @@
 [project]
 # UPDATE THIS BEFORE PUBLISHING
-name = "NUTS experimentalist"
+name = "NUTS-experimentalist"
 description = "This is an experimentalist."
 authors = [{ name = "FirstName LastName", email = "your@email.de" }]
 dynamic = ["version"]
