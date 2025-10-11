@@ -2,7 +2,7 @@
 # UPDATE THIS BEFORE PUBLISHING
 name = "NUTS-experimentalist"
 description = "This is an experimentalist."
-authors = [{ name = "FirstName LastName", email = "your@email.de" }]
+authors = [{ name = "Sajjad Homayouni", email = "sajad.homayouni@gmail.com" }]
 dynamic = ["version"]
 
 readme = "README.md"

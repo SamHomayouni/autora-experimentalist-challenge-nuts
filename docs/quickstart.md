@@ -13,8 +13,3 @@ python -m pip install --upgrade --no-cache-dir \
   autora-experimentalist-nuts==0.0.2
 ```
 
-
-Check your installation by running:
-```shell
-python -c "from autora.experimentalist.autora_experimentalist_example import Example"
-```
