@@ -49,7 +49,7 @@ def sample(
         out[~np.isfinite(out)] = 0.0
         return out
 
-    def _predict_probs(model, X: pd.DataFrame) -> np.ndarray | None:
+    def _predict_probs(model, X: pd.DataFrame) -> Union[np.ndarray, None]:
         if hasattr(model, "predict_proba"):
             try:
                 p = model.predict_proba(X)
@@ -58,7 +58,7 @@ def sample(
                 return None
         return None
 
-    def _predict_regr(model, X: pd.DataFrame) -> np.ndarray | None:
+    def _predict_regr(model, X: pd.DataFrame) -> Union[np.ndarray, None]:
         if hasattr(model, "predict"):
             try:
                 y = np.asarray(model.predict(X)).reshape(-1, 1)
