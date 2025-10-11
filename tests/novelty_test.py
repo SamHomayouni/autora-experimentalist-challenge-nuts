@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import random
 from sklearn.linear_model import LinearRegression  # Import a dummy model
-from autora_experimentalist_challenge_nuts import sample
+from src.autora.experimentalist.autora_experimentalist_example import sample
 
 @pytest.fixture
 def seed():
