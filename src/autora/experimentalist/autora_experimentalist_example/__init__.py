@@ -31,7 +31,7 @@ def sample(
 
 
     # ----------------- Helpers -----------------
-    def _to_df(X, like: pd.DataFrame | None) -> pd.DataFrame:
+    def _to_df(X, like: Union[pd.DataFrame, None]) -> pd.DataFrame:
         if isinstance(X, pd.DataFrame):
             return X
         cols = list(like.columns) if isinstance(like, pd.DataFrame) else None
